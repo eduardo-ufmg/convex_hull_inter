@@ -2,7 +2,7 @@ import numpy as np
 from scipy.spatial import ConvexHull, HalfspaceIntersection
 from scipy.optimize import linprog
 
-def convex_hull_inter(Q: np.ndarray, y: np.ndarray) -> float:
+def convex_hull_inter(Q: np.ndarray, y: np.ndarray, factor_h: float, factor_k: int) -> float:
     """
     Computes the volume of the intersection of convex hulls for multiple classes.
 
@@ -11,13 +11,16 @@ def convex_hull_inter(Q: np.ndarray, y: np.ndarray) -> float:
     hull for each class's points. It then finds the intersection of all these
     hulls and calculates the N-dimensional volume of that intersection.
 
-    Args:
+    Parameters:
         Q (np.ndarray): An (M, N) similarity matrix where M is the number of samples
                         and N is the number of classes. Q[i, c] is the similarity
                         of sample i to class c. These rows are treated as points
                         in an N-dimensional space.
         y (np.ndarray): An (M,) array of labels, where y[i] is the integer class
                         label for sample i.
+        factor_h (float): A scaled factor from the RBF kernel bandwidth parameter.
+        factor_k (int): A scaled factor from the number of nearest neighbors used in
+                        the sparse RBF kernel.
 
     Returns:
         float: The N-dimensional volume of the intersection of all class-based
