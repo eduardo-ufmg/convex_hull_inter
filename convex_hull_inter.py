@@ -118,7 +118,7 @@ def convex_hull_inter(Q: np.ndarray, y: np.ndarray, factor_h: float, factor_k: i
     try:
         # The volume is calculated from the convex hull of the intersection's vertices.
         final_hull = ConvexHull(intersection_vertices, qhull_options='QJ')
-        return float(final_hull.volume)
+        return float(final_hull.volume) * factor_h * factor_k
     except Exception:
         # This final hull computation can fail if the intersection vertices are
         # themselves co-planar, meaning the intersection is a degenerate object.
