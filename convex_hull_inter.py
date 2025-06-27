@@ -1,8 +1,11 @@
 import numpy as np
-from scipy.spatial import ConvexHull, HalfspaceIntersection
 from scipy.optimize import linprog
+from scipy.spatial import ConvexHull, HalfspaceIntersection
 
-def convex_hull_inter(Q: np.ndarray, y: np.ndarray, factor_h: float, factor_k: int) -> float:
+
+def convex_hull_inter(
+    Q: np.ndarray, y: np.ndarray, factor_h: float, factor_k: int
+) -> float:
     """
     Computes the volume of the intersection of convex hulls for multiple classes.
 
@@ -59,7 +62,7 @@ def convex_hull_inter(Q: np.ndarray, y: np.ndarray, factor_h: float, factor_k: i
         try:
             # `qhull_options='QJ'` joggles the input to prevent precision issues
             # with degenerate or co-planar points, improving robustness.
-            hull = ConvexHull(points, qhull_options='QJ')
+            hull = ConvexHull(points, qhull_options="QJ")
             all_halfspaces.append(hull.equations)
         except Exception:
             # A QhullError typically means the points are degenerate (e.g., all
@@ -87,16 +90,16 @@ def convex_hull_inter(Q: np.ndarray, y: np.ndarray, factor_h: float, factor_k: i
     # Constraints for LP: [A, 1_vector]*[x, t]' <= b
     A_ub = np.hstack((A, np.ones((A.shape[0], 1))))
     b_ub = b
-    
+
     # Using 'highs-ipm' (interior-point method) is efficient for this type of problem.
-    res = linprog(c=c_lp, A_ub=A_ub, b_ub=b_ub, bounds=(None, None), method='highs-ipm')
+    res = linprog(c=c_lp, A_ub=A_ub, b_ub=b_ub, bounds=(None, None), method="highs-ipm")
 
     # `res.fun` is the optimal value of -t. If it's negative, then t is positive,
     # and we have found an interior point. A small tolerance is used for safety.
     if not res.success or res.fun > -1e-9:
         # The intersection is empty or touches only at a boundary, so its volume is 0.
         return 0.0
-    
+
     feasible_point = res.x[:-1]
 
     # --- 4. Compute the Vertices of the Intersection Polytope ---
@@ -117,7 +120,7 @@ def convex_hull_inter(Q: np.ndarray, y: np.ndarray, factor_h: float, factor_k: i
 
     try:
         # The volume is calculated from the convex hull of the intersection's vertices.
-        final_hull = ConvexHull(intersection_vertices, qhull_options='QJ')
+        final_hull = ConvexHull(intersection_vertices, qhull_options="QJ")
         return float(final_hull.volume) * factor_h * factor_k
     except Exception:
         # This final hull computation can fail if the intersection vertices are
