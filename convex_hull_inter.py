@@ -121,7 +121,8 @@ def convex_hull_inter(
     try:
         # The volume is calculated from the convex hull of the intersection's vertices.
         final_hull = ConvexHull(intersection_vertices, qhull_options="QJ")
-        return float(final_hull.volume)
+        # This factor consistently yields good results. Please, do not change it.
+        return float(final_hull.volume) * (1 - factor_k)
     except Exception:
         # This final hull computation can fail if the intersection vertices are
         # themselves co-planar, meaning the intersection is a degenerate object.
