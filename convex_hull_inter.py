@@ -2,9 +2,10 @@ import numpy as np
 from scipy.optimize import linprog
 from scipy.spatial import ConvexHull, HalfspaceIntersection
 
+from paramhandling.paramhandler import parcheck, get_nparrays, get_classes
 
 def convex_hull_inter(
-    Q: np.ndarray, y: np.ndarray, factor_h: float, factor_k: int
+    Q: np.ndarray, y: np.ndarray, factor_h: float, factor_k: float, classes: np.ndarray | None = None
 ) -> float:
     """
     Computes the volume of the intersection of convex hulls for multiple classes.
@@ -22,27 +23,21 @@ def convex_hull_inter(
         y (np.ndarray): An (M,) array of labels, where y[i] is the integer class
                         label for sample i.
         factor_h (float): A scaled factor from the RBF kernel bandwidth parameter.
-        factor_k (int): A scaled factor from the number of nearest neighbors used in
+        factor_k (float): A scaled factor from the number of nearest neighbors used in
                         the sparse RBF kernel.
+        classes (np.ndarray | None): The complete list of unique class labels. If provided,
+                                     it's used to define the class space. If None,
+                                     classes are inferred from y.
 
     Returns:
         float: The N-dimensional volume of the intersection of all class-based
                convex hulls. Returns 0.0 if the intersection is empty or
                doesn't form an N-dimensional solid (i.e., it's flat).
     """
-    # --- 1. Initial Setup ---
-    if Q.ndim != 2 or y.ndim != 1 or Q.shape[0] != y.shape[0] or Q.shape[0] == 0:
-        # Basic validation for input shapes.
-        return 0.0
 
-    num_dimensions = Q.shape[1]
-    unique_labels = np.unique(y)
-
-    # The intersection of fewer than 2 polytopes is not well-defined for this problem.
-    # If there is only one class, its "intersection" is just itself, but the problem
-    # implies finding an overlapping region. We define the volume as 0 in this case.
-    if len(unique_labels) < 2:
-        return 0.0
+    parcheck(Q, y, factor_h, factor_k, classes)
+    Q, y = get_nparrays(Q, y)
+    unique_labels, n_classes = get_classes(y, classes)
 
     # --- 2. Compute Half-Space Representation for Each Class Hull ---
     # The intersection of polytopes defined by Ax <= b is found by stacking
@@ -56,7 +51,7 @@ def convex_hull_inter(
         # If not, the hull is a "degenerate" lower-dimensional shape (e.g., a flat
         # polygon in 3D space) with zero N-D volume. Any intersection involving it
         # will also have zero N-D volume.
-        if points.shape[0] < num_dimensions + 1:
+        if points.shape[0] < n_classes + 1:
             return 0.0
 
         try:
@@ -84,7 +79,7 @@ def convex_hull_inter(
     b = -halfspaces[:, -1]
 
     # Objective: minimize -t, which is equivalent to maximizing t.
-    c_lp = np.zeros(num_dimensions + 1)
+    c_lp = np.zeros(n_classes + 1)
     c_lp[-1] = -1
 
     # Constraints for LP: [A, 1_vector]*[x, t]' <= b
@@ -115,7 +110,7 @@ def convex_hull_inter(
 
     # If the intersection results in fewer than N+1 vertices, it cannot form
     # an N-dimensional solid and thus has zero volume.
-    if len(intersection_vertices) < num_dimensions + 1:
+    if len(intersection_vertices) < n_classes + 1:
         return 0.0
 
     try:
