@@ -4,8 +4,13 @@ from scipy.spatial import ConvexHull, HalfspaceIntersection
 
 from paramhandling.paramhandler import parcheck, get_nparrays, get_classes
 
+
 def convex_hull_inter(
-    Q: np.ndarray, y: np.ndarray, factor_h: float, factor_k: float, classes: np.ndarray | None = None
+    Q: np.ndarray,
+    y: np.ndarray,
+    factor_h: float,
+    factor_k: float,
+    classes: np.ndarray | None = None,
 ) -> float:
     """
     Computes the volume of the intersection of convex hulls for multiple classes.
